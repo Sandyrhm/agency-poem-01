@@ -33,4 +33,6 @@ cat out/entry.txt
 ```
 
 The poem is fixed text (16 lines), so both graded runs write
-byte-identical output.
+byte-identical output. Before writing, the program validates the
+poem is 1–1000 characters (the competition's limit) and writes the
+file atomically, so a crash can never leave a partial entry behind.
