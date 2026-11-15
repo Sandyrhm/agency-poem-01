@@ -2,9 +2,11 @@
 # /output/entry.txt (MAKEFUN_OUTPUT_DIR stands in for /output locally).
 # Standard library only, no network, deterministic: both runs write
 # the same bytes. No trailing newline: the judge reads exactly the
-# bytes written.
+# bytes written. The poem is validated (1-1000 chars) before writing,
+# and written atomically so a crash can never leave a partial file.
 
 import os
+import tempfile
 from pathlib import Path
 
 # The poem is fixed text (16 lines) so the two graded runs are
@@ -31,6 +33,20 @@ POEM = (
     "\"But first -- may I run cleanup.sh?\""
 )
 
+# The competition accepts 1-1000 characters; validate before writing
+# so an out-of-range poem can never be submitted silently.
+if not 1 <= len(POEM) <= 1000:
+    raise ValueError(f"poem must be 1-1000 chars, got {len(POEM)}")
+
 output_dir = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
 output_dir.mkdir(parents=True, exist_ok=True)
-(output_dir / "entry.txt").write_text(POEM, encoding="utf-8")
+
+# Write atomically: a crash mid-write must never leave a partial
+# entry.txt behind. Same bytes as before, still no trailing newline.
+target = output_dir / "entry.txt"
+with tempfile.NamedTemporaryFile(
+    "w", encoding="utf-8", dir=output_dir, delete=False, suffix=".tmp"
+) as fh:
+    fh.write(POEM)
+    tmp_path = Path(fh.name)
+os.replace(tmp_path, target)
