@@ -49,4 +49,7 @@ with tempfile.NamedTemporaryFile(
 ) as fh:
     fh.write(POEM)
     tmp_path = Path(fh.name)
+# tempfile creates the file mode 0600; the grader reads the output as
+# a different user, so make it world-readable before moving it in place.
+os.chmod(tmp_path, 0o644)
 os.replace(tmp_path, target)
